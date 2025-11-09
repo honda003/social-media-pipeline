@@ -1,0 +1,14 @@
+# Airflow logs
+airflow/logs/
+
+# Virtual environment
+social-media-analytics/
+
+
+minio/
+grafana/
+databases/
+kafka/
+README.md
+python/.env
+python/states/

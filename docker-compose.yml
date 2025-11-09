@@ -1,0 +1,235 @@
+#******************************************************************************************************************************************************
+#******************************************************* services *************************************************************************************
+#******************************************************************************************************************************************************
+services:
+  #====================================================================================================================================================
+  #======================================================= DataBases ==================================================================================
+  #====================================================================================================================================================
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=admin
+    command: ["postgres", "-c", "wal_level=logical"]
+    volumes:
+      - ./databases/postgres/pg_data:/var/lib/postgresql/data
+    networks:
+      - data-net
+
+  # clickhouse:
+  #   image: clickhouse/clickhouse-server:latest
+  #   container_name: clickhouse
+  #   ports:
+  #     - "8123:8123"
+  #     - "9000:9000"
+  #   environment:
+  #     CLICKHOUSE_USER: default
+  #     CLICKHOUSE_PASSWORD: "123"
+  #     CLICKHOUSE_DB: default
+  #   volumes:
+  #     - ./databases/clickhouse/config/default-password.xml:/etc/clickhouse-server/users.d/default-password.xml
+  #     - ./databases/clickhouse/clickhouse_data:/var/lib/clickhouse
+  #     - clickhouse_logs:/var/log/clickhouse-server
+  #   networks:
+  #     - data-net
+
+  #====================================================================================================================================================
+  #============================================================ minio =================================================================================
+  #====================================================================================================================================================
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9001:9001"
+      - "9002:9000"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./minio/data:/data
+    networks:
+      - data-net
+
+  #====================================================================================================================================================
+  #======================================================= spark ======================================================================================
+  #====================================================================================================================================================
+  spark-master:
+    build:
+      context: .
+      dockerfile: ./spark/Dockerfiles/spark/Dockerfile.spark
+    container_name: spark-master
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host 0.0.0.0
+    environment:
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_CLASSPATH=/opt/spark/jars/external/*
+    ports:
+      - "7077:7077"
+      - "8180:8080"
+    volumes:
+      - ./spark/jar:/opt/spark/jars/external
+      - ./python:/opt/spark/python
+    networks:
+      - data-net
+
+  spark-worker:
+    build:
+      context: .
+      dockerfile: ./spark/Dockerfiles/spark/Dockerfile.spark
+    container_name: spark-worker
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker --webui-port 8081 spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_WEBUI_PORT=8081
+      - SPARK_CLASSPATH=/opt/spark/jars/external/*
+    ports:
+      - "8181:8081"
+    volumes:
+      - ./spark/jar:/opt/spark/jars/external
+      - ./python:/opt/spark/python
+    depends_on:
+      - spark-master
+    networks:
+      - data-net
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: ./spark/Dockerfiles/jupyter/Dockerfile.jupyter
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - PYSPARK_SUBMIT_ARGS=--master spark://spark-master:7077 pyspark-shell
+      - SPARK_CLASSPATH=/opt/spark/jars/external/*
+    volumes:
+      - ./spark/jar:/opt/spark/jars/external
+      - ./python:/opt/spark/python
+    depends_on:
+      - spark-master
+    entrypoint: >
+      jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token='' --NotebookApp.password=''
+    networks:
+      - data-net
+
+  #====================================================================================================================================================
+  #============================================================== airflow =============================================================================
+  #====================================================================================================================================================
+  airflow-webserver:
+    build:
+      context: ./airflow/Dockerfile
+      dockerfile: Dockerfile
+    container_name: airflow-webserver
+    restart: always
+    depends_on:
+      - airflow-postgres
+      - airflow-redis
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config/airflow-init.sh:/opt/airflow/airflow-init.sh
+      - ./python:/opt/airflow/python
+    ports:
+      - "8084:8080"
+    command: bash -c "/opt/airflow/airflow-init.sh"
+    networks:
+      - data-net
+
+  airflow-scheduler:
+    build:
+      context: ./airflow/Dockerfile
+      dockerfile: Dockerfile
+    container_name: airflow-scheduler
+    restart: always
+    depends_on:
+      - airflow-redis
+      - airflow-postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres:5432/airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./python:/opt/airflow/python
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: bash -c "airflow scheduler"
+    networks:
+      - data-net
+
+  airflow-worker:
+    build:
+      context: ./airflow/Dockerfile
+      dockerfile: Dockerfile
+    container_name: airflow-worker
+    restart: always
+    depends_on:
+      - airflow-redis
+      - airflow-postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://airflow-redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@airflow-postgres:5432/airflow
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./python:/opt/airflow/python
+    user: root
+    command: bash -c "airflow celery worker"
+    networks:
+      - data-net
+
+  airflow-redis:
+    image: redis:6.2
+    container_name: airflow-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - data-net
+
+  airflow-postgres:
+    image: postgres:14
+    container_name: airflow-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_db:/var/lib/postgresql/data
+    networks:
+      - data-net
+
+#====================================================================================================================================================
+#******************************************************* volumes & networks ***************************************************************************
+#******************************************************************************************************************************************************
+volumes:
+  clickhouse_logs:
+  airflow_db:
+  airflow_state:
+  grafana_data:
+
+networks:
+  data-net:
+    driver: bridge

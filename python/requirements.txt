@@ -1,0 +1,4 @@
+python-dotenv
+praw
+minio
+google-api-python-client
