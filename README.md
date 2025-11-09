@@ -73,7 +73,7 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 
 ### MinIO Bucket Structure
 ![MinIO Bucket](images/minio_bucket_structure.png)  
-*Shows how raw and processed data are stored.*
+*Shows how raw data is stored.*
 
 ---
 
