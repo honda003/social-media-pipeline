@@ -121,16 +121,11 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 ### To Run:
 
 1. **Setup Environment**:
-   - Enter the Airflow container:  
+   - Enter the project folder:  
      ```bash
-     docker exec -it airflow-scheduler bash
+     docker compose up -d
      ```
-   - Install Python dependencies inside the container:  
-     ```bash
-     pip install -r python/requirements.txt
-     ```
-   - Ensure Postgres service is running and Airflow connections are properly configured.
-   - Ensure MinIO service is running.
+   - Ensure all containers are running
 
 2. **Run Ingestion**:
    - Trigger Airflow DAGs for Reddit and YouTube ingestion via the Airflow UI or CLI.
