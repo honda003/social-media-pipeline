@@ -20,22 +20,6 @@ services:
     networks:
       - data-net
 
-  # clickhouse:
-  #   image: clickhouse/clickhouse-server:latest
-  #   container_name: clickhouse
-  #   ports:
-  #     - "8123:8123"
-  #     - "9000:9000"
-  #   environment:
-  #     CLICKHOUSE_USER: default
-  #     CLICKHOUSE_PASSWORD: "123"
-  #     CLICKHOUSE_DB: default
-  #   volumes:
-  #     - ./databases/clickhouse/config/default-password.xml:/etc/clickhouse-server/users.d/default-password.xml
-  #     - ./databases/clickhouse/clickhouse_data:/var/lib/clickhouse
-  #     - clickhouse_logs:/var/log/clickhouse-server
-  #   networks:
-  #     - data-net
 
   #====================================================================================================================================================
   #============================================================ minio =================================================================================
