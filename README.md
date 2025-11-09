@@ -31,9 +31,13 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 ## 📈 **Key Features** 💡  
 
 ### 🎯 Medallion Architecture
-- **Bronze Layer**: Raw data ingestion from APIs (Reddit, YouTube) stored in MinIO (S3-compatible storage).
-- **Silver Layer**: Cleaned and transformed data using PySpark.
-- **Gold Layer**: Aggregated and enriched data stored in **PostgreSQL** for analytics and reporting.
+- **Bronze Layer**: Raw data ingestion from APIs (Reddit, YouTube, etc.) stored in MinIO as JSON.
+- **Silver Layer**: Cleaned and transformed data with PySpark, handling:
+  - Normalization of data from multiple platforms into a unified schema  
+  - Missing values  
+  - Inconsistent field names  
+  - Timestamp differences
+- **Gold Layer**: Aggregated data stored in **Postgres** for analytics.
 
 ### 🔌 Data Pipeline
 - Orchestrated via **Airflow DAGs** with task dependencies.
@@ -73,9 +77,13 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 ## 🚀 **Technical Highlights**  
 
 ### ⚡ Robust Data Pipeline
-- **Airflow DAGs**: Orchestrates extraction from APIs, transformation, and MinIO upload.
-- **Python Scripts**: Separate scripts for Reddit (`reddit.py`) and YouTube (`youtube.py`) processing.
-- **State Management**: Tracks processed items to enable incremental ingestion.
+- **Python & PySpark Notebooks**: Scripts for ingestion (`reddit.py`, `youtube.py`) and transformations (`social_media_processing.py`).
+- **Data Transformation with PySpark**:
+  - Normalize data from multiple platforms into a unified schema.
+  - Handle missing values, inconsistent field names, and timestamp differences.
+- **Postgres (Gold Layer)**: Centralized storage for aggregated, analytics-ready data.
+- **MinIO (Bronze Layer)**: Stores raw JSON files fetched from APIs.
+- **Airflow DAGs**: Orchestrates ingestion and processing tasks.
 
 ### 🛡️ Data Integrity & Optimization
 - **PySpark Transformations**: Deduplication, enrichment, and aggregation.
@@ -104,3 +112,28 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
   - airflow_dag.png: DAG visualization in Airflow.
   - minio_bucket_structure.png: MinIO storage layout.
   - pipeline_logs.png: Example logs from task execution.
+
+
+
+### To Run:
+
+1. **Setup Environment**:
+   - Enter the Airflow container:  
+     ```bash
+     docker exec -it <airflow_container_name> /bin/bash
+     ```
+   - Install Python dependencies inside the container:  
+     ```bash
+     pip install -r python/requirements.txt
+     ```
+   - Ensure Postgres service is running and Airflow connections are properly configured.
+   - Ensure MinIO service is running.
+
+2. **Run Ingestion**:
+   - Trigger Airflow DAGs for Reddit and YouTube ingestion via the Airflow UI or CLI.
+
+3. **Transform Data**:
+   - Airflow DAGs automatically run PySpark transformations.
+
+4. **Visualize**:
+   - Connect BI tool (e.g., Power BI) to Postgres Gold layer to generate dashboards.
