@@ -12,3 +12,4 @@ kafka/
 README.md
 python/.env
 python/states/
+spark/notebooks
