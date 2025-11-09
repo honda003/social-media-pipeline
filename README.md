@@ -123,7 +123,7 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 1. **Setup Environment**:
    - Enter the Airflow container:  
      ```bash
-     docker exec -it <airflow_container_name> /bin/bash
+     docker exec -it airflow-scheduler bash
      ```
    - Install Python dependencies inside the container:  
      ```bash
