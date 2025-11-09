@@ -69,14 +69,11 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 ### Airflow DAG Snapshot
 ![Airflow DAG](images/airflow_dag.png)  
 *Visual representation of the Reddit and YouTube extraction DAG.*
+*Example of task execution and successful uploads.*
 
 ### MinIO Bucket Structure
 ![MinIO Bucket](images/minio_bucket_structure.png)  
 *Shows how raw and processed data are stored.*
-
-### Data Pipeline Execution Logs
-![Pipeline Logs](images/pipeline_logs.png)  
-*Example of task execution and successful uploads.*
 
 ---
 
