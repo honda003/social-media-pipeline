@@ -28,6 +28,12 @@ This project is a **Data Engineering Showcase (Nov 2025)**, constructing a robus
 
 ---
 
+## 🌟 **Project Objective**  
+
+**Goal:** Build a robust data pipeline that fetches, transforms, and analyzes social media data from multiple platforms, computing engagement metrics and insights.
+
+---
+
 ## 📈 **Key Features** 💡  
 
 ### 🎯 Medallion Architecture
