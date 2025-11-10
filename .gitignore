@@ -4,7 +4,7 @@ airflow/logs/
 # Virtual environment
 social-media-analytics/
 
-
+# Project folders and files
 minio/
 grafana/
 databases/
